@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SPK Saham ELSA — Simple Exponential Smoothing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="nav-brand">
+      <div class="nav-logo">SPK</div>
+      <div>
+        <div class="nav-title">Sistem Pendukung Keputusan</div>
+        <div class="nav-sub">Pemilihan Saham PT Elnusa Tbk (ELSA)</div>
+      </div>
+    </div>
+    <div class="nav-meta">
+      <div class="nav-chip"><span class="chip-dot green"></span>SES Model</div>
+      <div class="nav-chip"><span class="chip-dot blue"></span>FY2026 Forecast</div>
+      <div class="nav-chip"><span class="chip-dot gold"></span>4 Rasio Profitabilitas</div>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="hero-tag">Studi Kasus · Laporan Keuangan Tahunan</div>
+      <h1 class="hero-title">Forecasting Rasio Profitabilitas<br><span>PT Elnusa Tbk</span></h1>
+      <p class="hero-desc">
+        Menggunakan metode <b>Simple Exponential Smoothing (SES)</b> untuk memproyeksikan
+        rasio GPM, NPM, ROA, dan ROE periode FY2026, kemudian mengevaluasi hasilnya
+        terhadap threshold industri jasa migas guna menghasilkan rekomendasi investasi.
+      </p>
+      <div class="hero-badges">
+        <span class="hbadge">GPM</span>
+        <span class="hbadge">NPM</span>
+        <span class="hbadge">ROA</span>
+        <span class="hbadge">ROE</span>
+        <span class="hbadge alt">Ŷ = α·Y(t) + (1-α)·Ŷ(t)</span>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="verdict-hero" id="verdictHero">
+        <div class="vh-top">
+          <div class="vh-icon" id="vhIcon">◆</div>
+          <div>
+            <div class="vh-label">Rekomendasi</div>
+            <div class="vh-keputusan" id="vhKeputusan">—</div>
+          </div>
+        </div>
+        <div class="vh-score" id="vhScore">
+          <div class="vh-score-item" id="vhBeli"><span>0</span><small>BELI</small></div>
+          <div class="vh-score-item" id="vhTahan"><span>0</span><small>TAHAN</small></div>
+          <div class="vh-score-item" id="vhJual"><span>0</span><small>JUAL</small></div>
+        </div>
+        <div class="vh-alasan" id="vhAlasan">Menghitung model...</div>
+        <div class="vh-alpha">
+          <label>Smoothing Factor (α) = <b id="vhAlphaVal">0.60</b></label>
+          <input type="range" id="alphaRange" min="1" max="99" value="60" step="1">
+          <div class="alpha-desc">
+            Bobot FY2025: <b id="w25">60%</b> &nbsp;|&nbsp; Bobot FY2024: <b id="w24">40%</b>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STAT CARDS -->
+<div class="container">
+  <div class="stat-row" id="statRow"></div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="container main-grid">
+
+  <!-- SIDEBAR ALUR -->
+  <aside class="sidebar">
+    <div class="sidebar-title">Alur Model SPK</div>
+    <div class="step-nav" id="stepNav">
+      <button class="step-nav-btn active" data-tab="step1">
+        <span class="snb-num">1</span>
+        <span class="snb-text"><b>Input Data</b><small>Laporan keuangan aktual</small></span>
+      </button>
+      <div class="step-connector"></div>
+      <button class="step-nav-btn" data-tab="step2">
+        <span class="snb-num">2</span>
+        <span class="snb-text"><b>Hitung Rasio</b><small>GPM, NPM, ROA, ROE aktual</small></span>
+      </button>
+      <div class="step-connector"></div>
+      <button class="step-nav-btn" data-tab="step3">
+        <span class="snb-num">3</span>
+        <span class="snb-text"><b>SES Forecast</b><small>Proyeksi rasio FY2026</small></span>
+      </button>
+      <div class="step-connector"></div>
+      <button class="step-nav-btn" data-tab="step4">
+        <span class="snb-num">4</span>
+        <span class="snb-text"><b>Evaluasi</b><small>Bandingkan vs threshold</small></span>
+      </button>
+      <div class="step-connector"></div>
+      <button class="step-nav-btn" data-tab="step5">
+        <span class="snb-num">5</span>
+        <span class="snb-text"><b>Keputusan</b><small>Majority vote & rekomendasi</small></span>
+      </button>
+      <div class="step-connector"></div>
+      <button class="step-nav-btn" data-tab="grafik">
+        <span class="snb-num">📊</span>
+        <span class="snb-text"><b>Grafik</b><small>Visualisasi semua rasio</small></span>
+      </button>
+      <div class="step-connector"></div>
+      <button class="step-nav-btn" data-tab="kesimpulan">
+        <span class="snb-num">✓</span>
+        <span class="snb-text"><b>Kesimpulan</b><small>Laporan final SPK</small></span>
+      </button>
+    </div>
+
+    <!-- Mini info box -->
+    <div class="sidebar-info">
+      <div class="si-title">Tentang SES</div>
+      <div class="si-formula">Ŷ(t+1) = α·Y(t) + (1−α)·Ŷ(t)</div>
+      <ul class="si-list">
+        <li><b>α → 1</b>: Lebih condong ke data terbaru</li>
+        <li><b>α → 0</b>: Lebih konservatif / stabil</li>
+        <li><b>α = 0.6</b>: Default model ini</li>
+      </ul>
+      <div class="si-src">Sumber: Laporan Keuangan Tahunan ELSA FY2024–FY2025</div>
+    </div>
+  </aside>
+
+  <!-- CONTENT AREA -->
+  <div class="content-area">
+
+    <!-- ── STEP 1: INPUT DATA ──────────────────────────────────────── -->
+    <section class="tab-panel active" id="tab-step1">
+      <div class="panel-header">
+        <div class="panel-num">Step 1</div>
+        <div>
+          <h2>Input Data Laporan Keuangan</h2>
+          <p>Data aktual PT Elnusa Tbk dari laporan keuangan tahunan. Satuan: IDR Juta.</p>
+        </div>
+      </div>
+
+      <div class="info-box blue">
+        <b>📋 Sumber Data:</b> Laporan Posisi Keuangan (Balance Sheet) &amp;
+        Laporan Laba Rugi Komprehensif PT Elnusa Tbk FY2024 dan FY2025.
+        Semua nilai dalam satuan <b>IDR Juta (Millions)</b>.
+      </div>
+
+      <h3 class="sub-title">Laporan Laba Rugi</h3>
+      <div class="table-wrap">
+        <table class="dtable">
+          <thead><tr>
+            <th>Komponen</th><th>Rumus / Keterangan</th>
+            <th>FY2024</th><th>FY2025</th><th>Δ (%)</th>
+          </tr></thead>
+          <tbody id="tblIS"></tbody>
+        </table>
+      </div>
+
+      <h3 class="sub-title" style="margin-top:1.5rem">Laporan Posisi Keuangan</h3>
+      <div class="table-wrap">
+        <table class="dtable">
+          <thead><tr>
+            <th>Komponen</th><th>Rumus / Keterangan</th>
+            <th>FY2024</th><th>FY2025</th><th>Δ (%)</th>
+          </tr></thead>
+          <tbody id="tblBS"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── STEP 2: RASIO AKTUAL ────────────────────────────────────── -->
+    <section class="tab-panel" id="tab-step2">
+      <div class="panel-header">
+        <div class="panel-num">Step 2</div>
+        <div>
+          <h2>Perhitungan Rasio Profitabilitas Aktual</h2>
+          <p>Menghitung 4 rasio profitabilitas dari data laporan keuangan aktual FY2024 &amp; FY2025.</p>
+        </div>
+      </div>
+
+      <div class="formula-grid" id="formulaGrid"></div>
+
+      <div class="table-wrap" style="margin-top:1.2rem">
+        <table class="dtable">
+          <thead><tr>
+            <th>Rasio</th><th>Rumus</th>
+            <th>Nilai FY2024</th><th>Nilai FY2025</th><th>Δ (pp)</th><th>Trend</th>
+          </tr></thead>
+          <tbody id="tblRasio"></tbody>
+        </table>
+      </div>
+
+      <div class="info-box green" style="margin-top:1rem">
+        <b>📌 Catatan:</b> pp = percentage point, menunjukkan selisih absolut antar dua nilai persentase.
+        Trend positif (↑) artinya rasio membaik dari FY2024 ke FY2025.
+      </div>
+    </section>
+
+    <!-- ── STEP 3: SES FORECAST ───────────────────────────────────── -->
+    <section class="tab-panel" id="tab-step3">
+      <div class="panel-header">
+        <div class="panel-num">Step 3</div>
+        <div>
+          <h2>Simple Exponential Smoothing — Forecast FY2026</h2>
+          <p>Memproyeksikan rasio profitabilitas periode FY2026 menggunakan metode SES.</p>
+        </div>
+      </div>
+
+      <div class="ses-formula-box">
+        <div class="sfb-title">Rumus SES</div>
+        <div class="sfb-formula">Ŷ(FY2026) = α · Y(FY2025) + (1 − α) · Y(FY2024)</div>
+        <div class="sfb-params" id="sfbParams"></div>
+      </div>
+
+      <div class="alpha-control-inline">
+        <label>Ubah nilai α:</label>
+        <input type="range" id="alphaRange2" min="1" max="99" value="60" step="1">
+        <span id="alphaVal2" class="alpha-badge">α = 0.60</span>
+      </div>
+
+      <div class="table-wrap" style="margin-top:1rem">
+        <table class="dtable">
+          <thead><tr>
+            <th>Rasio</th>
+            <th>Y(FY2024) = Ŷ(t)</th>
+            <th>Y(FY2025) = Y(t)</th>
+            <th>α × Y(FY2025)</th>
+            <th>(1−α) × Y(FY2024)</th>
+            <th>Ŷ(FY2026)</th>
+            <th>Δ FY25→26</th>
+          </tr></thead>
+          <tbody id="tblSES"></tbody>
+        </table>
+      </div>
+
+      <div class="ses-cards" id="sesCards"></div>
+    </section>
+
+    <!-- ── STEP 4: EVALUASI ───────────────────────────────────────── -->
+    <section class="tab-panel" id="tab-step4">
+      <div class="panel-header">
+        <div class="panel-num">Step 4</div>
+        <div>
+          <h2>Evaluasi Threshold Industri Jasa Migas</h2>
+          <p>Membandingkan hasil forecast FY2026 terhadap benchmark industri untuk menentukan zona keputusan.</p>
+        </div>
+      </div>
+
+      <div class="threshold-legend">
+        <div class="tl-item beli"><div class="tl-dot"></div><div><b>BELI</b><span>Rasio ≥ threshold beli — profitabilitas baik</span></div></div>
+        <div class="tl-item tahan"><div class="tl-dot"></div><div><b>TAHAN</b><span>Threshold tahan ≤ rasio &lt; threshold beli — cukup</span></div></div>
+        <div class="tl-item jual"><div class="tl-dot"></div><div><b>JUAL</b><span>Rasio &lt; threshold tahan — profitabilitas lemah</span></div></div>
+      </div>
+
+      <div class="eval-cards" id="evalCards"></div>
+
+      <div class="table-wrap" style="margin-top:1.2rem">
+        <table class="dtable">
+          <thead><tr>
+            <th>Rasio</th>
+            <th>Forecast FY2026</th>
+            <th>Threshold Beli</th>
+            <th>Threshold Tahan</th>
+            <th>Selisih vs Beli</th>
+            <th>Keterangan</th>
+            <th>Zona</th>
+          </tr></thead>
+          <tbody id="tblEval"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── STEP 5: KEPUTUSAN ──────────────────────────────────────── -->
+    <section class="tab-panel" id="tab-step5">
+      <div class="panel-header">
+        <div class="panel-num">Step 5</div>
+        <div>
+          <h2>Agregasi Hasil &amp; Keputusan Akhir</h2>
+          <p>Metode: <b>Majority Vote</b> — zona dengan frekuensi terbanyak menjadi rekomendasi final.</p>
+        </div>
+      </div>
+
+      <div class="vote-section" id="voteSection"></div>
+
+      <div class="final-verdict" id="finalVerdict"></div>
+
+      <h3 class="sub-title" style="margin-top:1.5rem">Rekap Semua Rasio</h3>
+      <div class="table-wrap">
+        <table class="dtable">
+          <thead><tr>
+            <th>Rasio</th><th>Label</th>
+            <th>FY2024</th><th>FY2025</th><th>Forecast FY2026</th>
+            <th>Δ FY24→25</th><th>Δ FY25→26</th><th>Zona</th>
+          </tr></thead>
+          <tbody id="tblRekap"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── GRAFIK ─────────────────────────────────────────────────── -->
+    <section class="tab-panel" id="tab-grafik">
+      <div class="panel-header">
+        <div class="panel-num">📊</div>
+        <div>
+          <h2>Visualisasi Rasio Profitabilitas</h2>
+          <p>Grafik perbandingan rasio aktual FY2024, FY2025, dan forecast FY2026 vs threshold industri.</p>
+        </div>
+      </div>
+
+      <div class="chart-legend">
+        <span><span class="cleg-box" style="background:#93C5E8"></span>FY2024 (Aktual)</span>
+        <span><span class="cleg-box" style="background:#1D4E89"></span>FY2025 (Aktual)</span>
+        <span><span class="cleg-box" style="background:rgba(201,64,64,.55)"></span>FY2026 (Forecast)</span>
+        <span><span class="cleg-line" style="border-color:#27500A"></span>Threshold Beli</span>
+        <span><span class="cleg-line dashed" style="border-color:#8B5E00"></span>Threshold Tahan</span>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="cc-title">Semua Rasio — Perbandingan 3 Periode</div>
+          <div class="cc-wrap"><canvas id="chartAll"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="cc-title">Trend GPM &amp; NPM</div>
+          <div class="cc-wrap"><canvas id="chartPN"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="cc-title">Trend ROA &amp; ROE</div>
+          <div class="cc-wrap"><canvas id="chartAE"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="cc-title">Posisi Forecast vs Threshold</div>
+          <div class="cc-wrap"><canvas id="chartRadar"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── KESIMPULAN ─────────────────────────────────────────────── -->
+    <section class="tab-panel" id="tab-kesimpulan">
+      <div class="panel-header">
+        <div class="panel-num">✓</div>
+        <div>
+          <h2>Kesimpulan &amp; Laporan Final SPK</h2>
+          <p>Ringkasan lengkap seluruh proses dan hasil Sistem Pendukung Keputusan.</p>
+        </div>
+      </div>
+      <div id="kesimpulanContent"></div>
+    </section>
+
+  </div><!-- end content-area -->
+</div><!-- end main-grid -->
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div>
+      <b>SPK Pemilihan Saham — PT Elnusa Tbk (ELSA)</b><br>
+      <small>Metode: Simple Exponential Smoothing (SES) · Kriteria: Rasio Profitabilitas · Data: Laporan Keuangan Tahunan FY2024–FY2025</small>
+    </div>
+    <div class="footer-right">
+      <span>IDR Juta</span>
+      <span>α = <b id="footerAlpha">0.60</b></span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="/static/js/main.js"></script>
+</body>
+</html>
