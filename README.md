@@ -27,7 +27,7 @@ Project ini dibuat sebagai prototype analisis keputusan saham: data laporan keua
 Masuk ke folder project:
 
 ```powershell
-cd "ELSA_Predict"
+cd "D:\Documents\Semangat Skripsi\Nyoba SPK\spk_elsa"
 ```
 
 Install Flask jika belum ada:
